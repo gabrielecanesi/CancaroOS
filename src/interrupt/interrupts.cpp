@@ -1,14 +1,9 @@
 #include "interrupts.h"
-#include "kernel.h"
-#include "io.h"
-#include "idt.h"
-#include "io.h"
-#include "keyboard.h"
+#include "../io/io.h"
+#include "../io/keyboard.h"
 
 __attribute((interrupt)) void faultHandler(interrupt_frame *frame){
-    print("Diostronzo");
-    while (true);
-    
+
 }
 
 
@@ -19,8 +14,7 @@ __attribute((interrupt)) void keyboardHandler(interrupt_frame *frame){
 }
 
 __attribute((interrupt)) void divisionByZeroHandler(interrupt_frame *frame){
-    print("Divisione per 0 bro");
-    while(true);
+
 }
 
 void endPICMaster(){

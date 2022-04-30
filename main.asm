@@ -1,48 +1,76 @@
 global start
 global gdt64.pointer
+global magic
+global addr
 extern long_mode_start
-extern handler
+extern initMultiboot
+global page_l4
+global page_l3
+global page_l2
+global pages_l3
+global pages_l2
+global page_l3_h
+extern setupPages
+global GDT.Pointer
+global stack_top
+
+%define KERNEL_START 0xC0000000
+
 
 section .text
-bits 32
 start:
-    mov esp, stack_top
+    mov esp, stack_top - KERNEL_START
+
+bits 32
+    ; Push the multiboot data on the stack
+    push eax
+    push ebx
 
     call check_multiboot
     call check_cpuid
     call check_long_mode
-    call set_page_tables
+    ;call set_page_tables
     call enable_paging
-    lgdt [GDT.Pointer]
-    jmp GDT.Code:long_mode_start
+    lgdt [GDT.Pointer - KERNEL_START]
 
-    hlt
+    jmp (0x8):(start64 - KERNEL_START)
+
+    bits 64
+
+
+
+start64:
+    mov ax, 0x10
+    mov ss, ax
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+
+    mov rax, long_mode_start
+    jmp rax
+
+
+bits 32
 
 set_page_tables:
-    mov eax, page_l3
-    or eax, 0b11
-    mov [page_l4], eax
-
-    mov eax, page_l2
-    or eax, 0b11
-    mov [page_l3], eax
 
     mov ecx, 0
-.loop: 
+.loop:
     mov eax, 0x200000
     mul ecx
     or eax, 0b10000011
-    mov [page_l2 + ecx + ecx * 8], eax
+    mov [page_l2 + ecx * 8 - KERNEL_START], eax
 
     inc ecx
     cmp ecx, 512
     jne .loop
-    ret
 
+    ret
 
 enable_paging:
     ; Posizione in memoria della page table
-    mov eax, page_l4
+    mov eax, page_l4 - KERNEL_START
     mov cr3, eax
 
     ; PAE
@@ -85,6 +113,7 @@ check_multiboot:
     cmp eax, 0x36d76289
     jne .no_multiboot
     ret
+
 .no_multiboot:
     mov al, "M"
     jmp error
@@ -108,30 +137,46 @@ error:
     mov byte [0xb8000], al
     hlt
 
-section .bss:
+%macro gen_pd_2mb 3
+	%assign i %1
+	%rep 2
+		dq (i | 0x83)
+		%assign i i+0x200000
+	%endrep
+	%rep %3
+		dq 0
+	%endrep
+%endmacro
+
+
+section .rodata
 align 4096
 page_l4:
-    resb 4096
+	; map lower half of memory
+	dq page_l3 + 0x3 - KERNEL_START
+	times 510 dq 0 ; padding
+
+	; map higher half of memory
+	dq page_l3_h + 0x3 - KERNEL_START
 page_l3:
-    resb 4096
+	; map lower half of memory
+	dq page_l2 + 0x3 - KERNEL_START
+	times 511 dq 0 ; padding
+page_l3_h:
+	times 510 dq 0 ; padding
+
+	; map higher half of memory
+	dq page_l2 + 0x3 - KERNEL_START
+	dq 0
 page_l2:
-    resb 4096
+	; identity map 1 GB
+	;gen_pd_2mb 0, 10, 502
+	gen_pd_2mb 0, 512, 0
 
  stack_bottom:
     resb 4096 * 4
  stack_top:
 
- section .rodata
- gdt64:
-    dq 0
-.code_segment: equ $ - gdt64
-    dq (1 << 43) | (1 << 44) | (1 << 47) | (1 << 53)
-.data: equ $ - gdt64
-    dq (1<<44) | (1<<47) | (1<<41)
-
-.pointer:
-    dw $ - gdt64 - 1
-    dq gdt64
 
 ; Access bits
 PRESENT        equ 1 << 7
@@ -166,4 +211,4 @@ GDT:
         dd 0x00CF8900
     .Pointer:
         dw $ - GDT - 1
-        dq GDT
+        dq GDT - KERNEL_START

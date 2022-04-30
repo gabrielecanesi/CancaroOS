@@ -1,7 +1,7 @@
 #include "idt.h"
 #include "interrupts.h"
-#include "kernel.h"
-#include "io.h"
+#include "../kernel.h"
+#include "../io/io.h"
 
 extern "C" void load_idt();
 
@@ -23,6 +23,7 @@ unsigned long InterruptDescriptor::getOffset(){
 
 
 IDTR idtable;
+
 
 void setupInterrupts(){
     idtable.limit = 0xFFFF;
@@ -49,14 +50,12 @@ void setupInterrupts(){
     p->type = TYPE_INTERRUPT;
     p->segment_selector = 0x08;
 
-    load_idt();
+    //load_idt();
 
     remapPIC();
     out(PIC1_DATA, 0b11111101);
     out(PIC2_DATA, 0b11111111);
 
     asm("sti");
-    while (true){
-    }
     
 }

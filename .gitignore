@@ -1,7 +1,8 @@
 build/*
 **/kernel.iso
+kernel.iso
 .vscode/*
-description
 **/*.bin
 
+**/.DS_Store
 .DS_Store

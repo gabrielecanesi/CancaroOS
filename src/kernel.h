@@ -24,7 +24,7 @@ enum Color {
 void clear();
 void set_color(unsigned char foreground, unsigned char background);
 void print(const char *str);
-void print(long number);
+void print(unsigned long number);
 void print(char ascii);
 
 #endif
