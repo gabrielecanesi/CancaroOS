@@ -19,8 +19,8 @@ align 8
     dw  0x05    ;Type: framebuffer
     dw  0x01
     dd  framebuffer_tag_end - framebuffer_tag_start ;size
-    dd  1024   ;Width
-    dd  768   ;Height
+    dd  1920   ;Width
+    dd  1080   ;Height
     dd  32   ;Depth
 framebuffer_tag_end:
 
