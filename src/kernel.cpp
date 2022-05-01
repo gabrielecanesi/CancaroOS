@@ -4,23 +4,30 @@
 
 
 unsigned long KERNEL_START = 0xffffffff80000000;
-unsigned long fb_addr =      0xFFFFFF8000000000;
+unsigned long fb_addr =      0xFFFFFF0000000000;
 
 extern "C" void refresh_tlb();
 
 extern unsigned long page_l4;
 unsigned long *page4;
-//unsigned long page_l3[512];
-//unsigned long page_l2[512];
 extern unsigned long page_l2;
 extern unsigned long page_l3;
 extern unsigned long page_l3_h;
 extern unsigned long page_fb;
 
 void mapPage(unsigned long physical, unsigned long virtualAddr){
-    unsigned long *pfb = &page_fb;
-    for (unsigned long i = 0; i < 512; ++i){
-        pfb[i] = ((unsigned long) (physical + 0x200000 * i) << 21) | 0x83;
+
+    unsigned long p4Index = (virtualAddr >> 39) & 0x1FF;
+    unsigned long p3Index = (virtualAddr >> 30) & 0x1FF;
+    unsigned long p2Index = (virtualAddr >> 12) & 0x1FFFFF;
+
+
+    auto *pl3 = (unsigned long*)(((&page_l4)[p4Index] & ~0xFFF) + KERNEL_START);
+    auto *pl2 = (unsigned long*)((pl3[p3Index] & ~0xFFF) + KERNEL_START);
+
+    for (unsigned long i = p2Index; i < 512; ++i){
+        pl2[i] = physical | 0x83;
+        physical += 0x200000;
     }
     refresh_tlb();
 }
@@ -76,7 +83,6 @@ extern "C" void initMultiboot(unsigned long magic, unsigned long addr){
                 for (mmap = ((struct multiboot_tag_mmap *) tag)->entries;
                 (multiboot_uint8_t *) mmap < (multiboot_uint8_t *) tag + tag->size;
                      mmap = (multiboot_memory_map_t *) ((unsigned long) mmap + ((struct multiboot_tag_mmap *) tag)->entry_size)) {
-
                 }
 
                 break;
@@ -113,8 +119,8 @@ extern "C" void initMultiboot(unsigned long magic, unsigned long addr){
                         break;
 
                     case MULTIBOOT_FRAMEBUFFER_TYPE_RGB:
-                        //if(((unsigned long)fb) != 0xfd000000) *((unsigned long*)fb) = 85546;
-                        color = ((1 << tagfb->framebuffer_blue_mask_size) - 1) << tagfb->framebuffer_blue_field_position;
+                        color = (((1 << tagfb->framebuffer_blue_mask_size) - 1) << tagfb->framebuffer_blue_field_position) |
+                                (((1 << tagfb->framebuffer_green_mask_size) - 1) << tagfb->framebuffer_green_field_position);
                         break;
 
                     case MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT:
@@ -130,7 +136,6 @@ extern "C" void initMultiboot(unsigned long magic, unsigned long addr){
 
 
                 mapPage((unsigned long)fb, fb_addr);
-                print("porcoddio");
                 for (i = 0; i < tagfb->common.framebuffer_width; i++) {
                     for (int j = 0; j < tagfb->common.framebuffer_height; ++j){
 

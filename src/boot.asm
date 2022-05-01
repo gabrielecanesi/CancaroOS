@@ -15,7 +15,7 @@ stack:
 ; macro to setup pagetables later
 %macro gen_pd_2mb 3
 	%assign i %1
-	%rep 2
+	%rep %2
 		dq (i | 0x83)
 		%assign i i+0x200000
 	%endrep
@@ -134,8 +134,9 @@ align 4096
 page_l4:
 	; map lower half of memory
 	dq page_l3 + 0x3 - KERNEL_HIGH_VMA
-	times 510 dq 0 ; padding
+	times 509 dq 0 ; padding
 
+	dq page_l3_fb + 0x3 - KERNEL_HIGH_VMA
 	; map higher half of memory
 	dq page_l3_h + 0x3 - KERNEL_HIGH_VMA
 page_l3:
@@ -144,18 +145,23 @@ page_l3:
 	times 510 dq 0 ; padding
 	dq page_l2 + 0x3 - KERNEL_HIGH_VMA
 page_l3_h:
-	dq page_fb + 0x3 - KERNEL_HIGH_VMA
-	times 509 dq 0 ; padding
+	times 510 dq 0 ; padding
+	;dq page_fb + 0x3 - KERNEL_HIGH_VMA
 
 	; map higher half of memory
 	dq page_l2 + 0x3 - KERNEL_HIGH_VMA
 	dq 0
+
 page_l2:
 	; identity map 1 GB
 	;gen_pd_2mb 0, 10, 502
 	gen_pd_2mb 0, 512, 0
 page_fb:
     times 512 dq 0
+
+page_l3_fb:
+    dq page_fb + 0x3 - KERNEL_HIGH_VMA
+    times 511 dq 0
 ;
 ; Define a static GDT in Assembly
 ; We need this (i think) so we can get into higher half mode, this will be replaced in C.
