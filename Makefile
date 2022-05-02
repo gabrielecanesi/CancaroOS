@@ -21,7 +21,8 @@ efi: build/kernel.bin
 	grub-mkrescue /usr/lib/grub/x86_64-efi iso-x86_64-efi -o kernel.iso
 
 build/kernel.bin: $(ASM_OBJ) $(CPP_OBJ)
-	x86_64-elf-ld -n -T linker.ld $(CPP_OBJ) $(ASM_OBJ) -o build/kernel.bin
+	x86_64-elf-objcopy -O elf64-x86-64 -I binary res/zap-light18.psf $(OBJ_DIR)/zap-light18.o
+	x86_64-elf-ld -n -T linker.ld $(CPP_OBJ) $(ASM_OBJ) $(OBJ_DIR)/zap-light18.o -o build/kernel.bin
 
 
 $(OBJ_DIR)/interrupt/interrupts.o: $(SRC_DIR)/interrupt/interrupts.cpp
