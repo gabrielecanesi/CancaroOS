@@ -1,6 +1,6 @@
 #include "keyboard.h"
 #include "ascii.h"
-#include "../kernel.h"
+#include "../text_mode/console.h"
 
 void handleKeypress(unsigned char key){
     static bool uppercase = false;
