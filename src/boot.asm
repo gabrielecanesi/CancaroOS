@@ -1,9 +1,11 @@
 extern idtable
+global load_idt
 global refresh_tlb
 global h_pages
 global page_l4
 global page_fb
-%define KERNEL_HIGH_VMA 0xffffffff80000000
+
+%define KERNEL_START 0xffffffff80000000
 
 section .bss
 align 16
@@ -30,13 +32,15 @@ section .data
 section .text
 global start
 start:
+
+    cli
 	; The bootloader has loaded us into 32-bit protected mode on an x86 machine.
 	; Interrupts are disabled. Paging is disabled. The processor state is as
 	; defined in the multiboot standard. The kernel has full control of the CPU.
 
 	; move the stack pointer to the top of our newly created stack
 	mov edi, ebx
-	mov esp, stack.top - KERNEL_HIGH_VMA
+	mov esp, stack.top - KERNEL_START
 
 	bits 32
 
@@ -46,7 +50,7 @@ start:
     mov ecx, 0
 
 	; load page tables
-	mov eax, page_l4 - KERNEL_HIGH_VMA
+	mov eax, page_l4 - KERNEL_START
 	mov cr3, eax	; set control register 3 to the level 4 page table
 
 	; enable PAE
@@ -66,14 +70,14 @@ start:
 	mov cr0, eax
 
 	; load the new GDT
-	lgdt [gdt.ptr_low - KERNEL_HIGH_VMA]
+	lgdt [gdt.ptr_low - KERNEL_START]
 
 
     pop ebx
     pop eax
 
 	; load new code selector (long jump)
-	jmp (0x8):(start64 - KERNEL_HIGH_VMA)
+	jmp (0x8):(start64 - KERNEL_START)
 	bits 64
 
 start64:
@@ -108,13 +112,12 @@ higher_half:
 	extern initMultiboot
 	call initMultiboot
 	call kernel_main
-	cli
 .hang: hlt
 	jmp .hang
 ;.end
 
 load_idt:
-    lidt [idtable - KERNEL_HIGH_VMA]
+    lidt [idtable]
     ret
 
 
@@ -133,23 +136,23 @@ section .data
 align 4096
 page_l4:
 	; map lower half of memory
-	dq page_l3 + 0x3 - KERNEL_HIGH_VMA
+	dq page_l3 + 0x3 - KERNEL_START
 	times 509 dq 0 ; padding
 
-	dq page_l3_fb + 0x3 - KERNEL_HIGH_VMA
+	dq page_l3_fb + 0x3 - KERNEL_START
 	; map higher half of memory
-	dq page_l3_h + 0x3 - KERNEL_HIGH_VMA
+	dq page_l3_h + 0x3 - KERNEL_START
 page_l3:
 	; map lower half of memory
-	dq page_l2 + 0x3 - KERNEL_HIGH_VMA
+	dq page_l2 + 0x3 - KERNEL_START
 	times 510 dq 0 ; padding
-	dq page_l2 + 0x3 - KERNEL_HIGH_VMA
+	dq page_l2 + 0x3 - KERNEL_START
 page_l3_h:
 	times 510 dq 0 ; padding
-	;dq page_fb + 0x3 - KERNEL_HIGH_VMA
+	;dq page_fb + 0x3 - KERNEL_START
 
 	; map higher half of memory
-	dq page_l2 + 0x3 - KERNEL_HIGH_VMA
+	dq page_l2 + 0x3 - KERNEL_START
 	dq 0
 
 page_l2:
@@ -160,7 +163,7 @@ page_fb:
     times 512 dq 0
 
 page_l3_fb:
-    dq page_fb + 0x3 - KERNEL_HIGH_VMA
+    dq page_fb + 0x3 - KERNEL_START
     times 511 dq 0
 ;
 ; Define a static GDT in Assembly
@@ -213,4 +216,4 @@ gdt:
 
 	.ptr_low:					; 32 bit GDT pointer
 		dw $ - gdt - 1			; limit
-		dq gdt - KERNEL_HIGH_VMA; base
+		dq gdt - KERNEL_START; base

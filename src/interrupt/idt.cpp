@@ -1,61 +1,61 @@
 #include "idt.h"
 #include "interrupts.h"
-#include "../kernel.h"
 #include "../io/io.h"
+#include "../memory/page_manager.h"
 
 extern "C" void load_idt();
 
-unsigned char TYPE_INTERRUPT = 0b10001110;
-unsigned char TYPE_CALL_GATE = 0b10001100;
-unsigned char TRAP_GATE =      0b10001111;
+u8 TYPE_INTERRUPT = 0b10001110;
+u8 TYPE_CALL_GATE = 0b10001100;
+u8 TRAP_GATE =      0b10001111;
 
-void InterruptDescriptor::setOffset(unsigned long offset){
-    offset1 = (unsigned short)(offset &  0x000000000000ffff);
-    offset2 = (unsigned short)((offset & 0x00000000ffff0000) >> 16);
-    offset3 = (unsigned int)((offset &   0xffffffff00000000) >> 32);
+void InterruptDescriptor::setOffset(u64 offset){
+    offset1 = (u16)(offset &  0x000000000000ffff);
+    offset2 = (u16)((offset & 0x00000000ffff0000) >> 16);
+    offset3 = (u32)((offset &   0xffffffff00000000) >> 32);
 }
 
 
-unsigned long InterruptDescriptor::getOffset(){
-    return (unsigned long)offset1 | (unsigned long)(offset2 << 16) |
-    (unsigned long)(offset3 << 32);
+u64 InterruptDescriptor::getOffset(){
+    return (u64)offset1 | (u64)(offset2 << 16) |
+    (u64)(offset3 << 32);
 }
 
 
 IDTR idtable;
 
+InterruptDescriptor interruptDescriptors[10];
 
 void setupInterrupts(){
     idtable.limit = 0xFFFF;
-    idtable.offset = (unsigned long) 0x143;
+    idtable.offset = reinterpret_cast<u64>(&interruptDescriptors);
 
-    InterruptDescriptor *interrupt = (InterruptDescriptor*)(idtable.offset + 0xE * sizeof(InterruptDescriptor));
-    interrupt->setOffset((unsigned long) faultHandler);
+    auto *interrupt = (InterruptDescriptor*)(idtable.offset + 0xE * sizeof(InterruptDescriptor));
+    interrupt->setOffset((u64) faultHandler);
     interrupt->type = TYPE_INTERRUPT;
     interrupt->segment_selector =  0x08;
 
 
-    InterruptDescriptor *keyboard = (InterruptDescriptor*)(idtable.offset + 0x01 * sizeof(InterruptDescriptor));
-    keyboard->setOffset((unsigned long) keyboardHandler);
+    auto *keyboard = (InterruptDescriptor*)(idtable.offset + 0x01 * sizeof(InterruptDescriptor));
+    keyboard->setOffset((u64) keyboardHandler);
     keyboard->type = TYPE_INTERRUPT;
     keyboard->segment_selector = 0x08;
 
-    InterruptDescriptor *aaaaa = (InterruptDescriptor*)(idtable.offset + 0x00 * sizeof(InterruptDescriptor));
-    aaaaa->setOffset((unsigned long) divisionByZeroHandler);
+    auto *aaaaa = (InterruptDescriptor*)(idtable.offset + 0x00 * sizeof(InterruptDescriptor));
+    aaaaa->setOffset((u64) divisionByZeroHandler);
     aaaaa->type = TYPE_INTERRUPT;
     aaaaa->segment_selector = 0x08;
 
-    InterruptDescriptor *p =  (InterruptDescriptor*)(idtable.offset + 0x21 * sizeof(InterruptDescriptor));
-    p->setOffset((unsigned long) keyboardHandler);
+    auto *p =  (InterruptDescriptor*)(idtable.offset + 0x21 * sizeof(InterruptDescriptor));
+    p->setOffset((u64) keyboardHandler);
     p->type = TYPE_INTERRUPT;
     p->segment_selector = 0x08;
 
-    //load_idt();
+    load_idt();
 
     remapPIC();
     out(PIC1_DATA, 0b11111101);
     out(PIC2_DATA, 0b11111111);
 
     asm("sti");
-    
 }

@@ -1,6 +1,6 @@
 #include "keyboard.h"
 #include "ascii.h"
-#include "../text_mode/console.h"
+#include "../console/console.h"
 
 void handleKeypress(unsigned char key){
     static bool uppercase = false;
@@ -11,11 +11,23 @@ void handleKeypress(unsigned char key){
     }
     
     char ascii = ASCIITable[key];
+    if (key == 0x1C){
+        Console::putChar('\n');
+        return;
+    }
+
+    if (key == 0x0E){
+        Console::removeChar();
+        return;
+    }
+
     if (uppercase){
         ascii -= 32;
     }
-    if (key < 0x57){
-        print(ascii);
+
+    if (key <= 0x58){
+        Console::putChar(ascii);
     }
-    
+
+
 }

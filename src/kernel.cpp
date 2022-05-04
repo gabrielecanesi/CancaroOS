@@ -3,8 +3,11 @@
 #include "memory/page_manager.h"
 #include "vga.h"
 #include "memory/memory_manager.h"
+#include "console/console.h"
+#include "interrupt/idt.h"
 
-
+multiboot_tag_framebuffer * tagfb;
+using namespace Console;
 
 extern "C" void initMultiboot(u64 magic, unsigned long addr){
 
@@ -20,9 +23,6 @@ extern "C" void initMultiboot(u64 magic, unsigned long addr){
     if (addr & 7) {
         return;
     }
-
-
-    size = *(unsigned *) addr;
 
     for (tag = (struct multiboot_tag *) (addr + 8);
          tag->type != MULTIBOOT_TAG_TYPE_END;
@@ -46,9 +46,10 @@ extern "C" void initMultiboot(u64 magic, unsigned long addr){
                 break;
 
             case MULTIBOOT_TAG_TYPE_FRAMEBUFFER: {
+
                 u32 color;
                 unsigned i;
-                auto *tagfb = (multiboot_tag_framebuffer *) tag;
+                tagfb = (multiboot_tag_framebuffer *) tag;
                 void *fb = (void *) (u64) tagfb->common.framebuffer_addr;
 
 
@@ -91,8 +92,8 @@ extern "C" void initMultiboot(u64 magic, unsigned long addr){
                         break;
                 }
 
+                initVideo(tagfb);
                 PageManager::mapPhisicalAddress((u64)fb, fb_addr, 1024 * 1024 * 16);
-
 
 
                 for (i = 0; i < tagfb->common.framebuffer_width; i++) {
@@ -118,7 +119,7 @@ extern "C" void initMultiboot(u64 magic, unsigned long addr){
 
                             case 32: {
                                 auto *pixel = (u32 *)((u64)fb_addr + (u64)(i * 4 + tagfb->common.framebuffer_pitch * j));
-                                *pixel = color;
+                                *pixel = static_cast<u32>(Color::LIGHT_BLUE);
                             }
                                 break;
                         }
@@ -128,11 +129,10 @@ extern "C" void initMultiboot(u64 magic, unsigned long addr){
             }
         }
     }
-    tag = (multiboot_tag *) ((u8 *) tag
-                                    + ((tag->size + 7) & ~7));
 }
 
-extern "C" void kernel_main(u64 multibootHeaderAddress){
-    while (true);
-    //setupInterrupts();
+extern "C" void kernel_main(){
+    Console::setTextColor(Color::BLACK, Color::LIGHT_BLUE);
+    print("==========Cancaro OS=========\n\n\n");
+    setupInterrupts();
 }
