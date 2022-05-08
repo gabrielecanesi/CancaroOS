@@ -32,17 +32,6 @@ extern "C" void initMultiboot(u64 magic, unsigned long addr){
         switch (tag->type) {
             case MULTIBOOT_TAG_TYPE_MMAP:
                 MemoryManager::initMemory(reinterpret_cast<multiboot_tag_mmap *>(tag));
-                multiboot_memory_map_t *mmap;
-                u64 availableRam;
-                availableRam = 0;
-                for (mmap = ((multiboot_tag_mmap *) tag)->entries;
-                (u8 *) mmap < (u8 *) tag + tag->size;
-                mmap = (multiboot_memory_map_t *) ((u64) mmap + ((multiboot_tag_mmap *) tag)->entry_size)) {
-                    if (mmap->type == MULTIBOOT_MEMORY_AVAILABLE){
-                        availableRam += mmap->len;
-                    }
-                }
-
                 break;
 
             case MULTIBOOT_TAG_TYPE_FRAMEBUFFER: {
@@ -131,8 +120,31 @@ extern "C" void initMultiboot(u64 magic, unsigned long addr){
     }
 }
 
+char buf[100];
+char *utostr(u64 number) {
+    bool negative = number < 0;
+    int index = 100;
+    buf[99] = '\0';
+    while (number != 0){
+         char remainder = number % 10;
+        number /= 10;
+        buf[--index] = remainder + '0';
+    }
+    if (negative){
+        buf[--index] = '-';
+    }
+    return buf + index;
+}
+
+
 extern "C" void kernel_main(){
     Console::setTextColor(Color::BLACK, Color::LIGHT_BLUE);
     print("==========Cancaro OS=========\n\n\n");
+    print("Available RAM: ");
+    print(utostr(MemoryManager::getAvailableRam() / (1024 * 1024)));
+    print(" MB.\n");
+
+    print("Initializing interrupts...");
     setupInterrupts();
+    print("Done.\n\nWelcome :)\n\n");
 }

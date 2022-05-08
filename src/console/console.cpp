@@ -23,7 +23,7 @@ void putCursor(){
     u32 xOffset = xPosition * header->width;
     u32 yOffset = yPosition * header->height;
 
-    for (u32 i = 0; i < 4; ++i){
+    for (u32 i = 0; i < 2; ++i){
         for (int j = 0; j < header->height; ++j){
             drawPixel(xOffset + i, yOffset + j, currentForeground);
         }

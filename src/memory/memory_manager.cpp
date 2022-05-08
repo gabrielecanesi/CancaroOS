@@ -1,7 +1,7 @@
 #include "memory_manager.h"
 #include "page_manager.h"
 
-u64 availableRam = 0;
+static u64 availableRam = 0;
 u8 buffer = 0;
 
 BitMap bitMap;
