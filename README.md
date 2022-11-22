@@ -1,4 +1,4 @@
-# CancaroOS
+# RandomOS
 A useless x86-64 ELF kernel.
 
 ## Build (Linux/MacOS)
