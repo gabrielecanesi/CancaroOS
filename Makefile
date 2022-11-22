@@ -8,7 +8,7 @@ CPP_OBJ := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(CPP_SRC))
 ASM_OBJ := $(patsubst $(SRC_DIR)/%.asm,$(OBJ_DIR)/%.obj,$(ASM_SRC))
 
 
-all: pc
+all: efi
 
 pc: build/kernel.bin
 	cp build/kernel.bin iso-i386-pc/boot
@@ -27,7 +27,7 @@ build/kernel.bin: $(ASM_OBJ) $(CPP_OBJ)
 
 $(OBJ_DIR)/interrupt/interrupts.o: $(SRC_DIR)/interrupt/interrupts.cpp
 	mkdir -p build/interrupt
-	x86_64-elf-g++ -c $(SRC_DIR)/interrupt/interrupts.cpp -o $(OBJ_DIR)/interrupt/interrupts.o -mcmodel=large -ffreestanding -mgeneral-regs-only
+	x86_64-elf-g++ -O3 -c $(SRC_DIR)/interrupt/interrupts.cpp -o $(OBJ_DIR)/interrupt/interrupts.o -mcmodel=large -ffreestanding -mgeneral-regs-only
 
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
