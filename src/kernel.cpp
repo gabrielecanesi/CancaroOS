@@ -139,7 +139,7 @@ char *utostr(u64 number) {
 
 extern "C" void kernel_main(){
     Console::setTextColor(Color::BLACK, Color::LIGHT_BLUE);
-    print("==========Cancaro OS=========\n\n\n");
+    print("==========Random OS=========\n\n\n");
     print("Available RAM: ");
     print(utostr(MemoryManager::getAvailableRam() / (1024 * 1024)));
     print(" MB.\n");
