@@ -1,4 +1,10 @@
 # RandomOS
+
+
+
+![Screenshot](img/screenshot.png "Screenshot")
+
+
 This is a very basic executable which leans on the grub multiboot2 protocol. The purpose of this project was to understand how the paging system of an x86 processor works along with its different operating modes.
 
 Keyboard works if PS/2 emulation is enabled. Also, a simple frame buffer is managed.
@@ -19,7 +25,3 @@ In order to generate an ISO (kernel.iso):
     make pc
     ```
 
-
-
-
-![Screenshot](img/screenshot.png "Screenshot")
